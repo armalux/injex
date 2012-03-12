@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include "conlib.h"
-#include "hooking.h"
+#include "hooklib.h"
 
 /* This is used to keep track of the hook layed for SaveFile(). */
 PENTRY_STUB_TRAMP pSaveFileStub;
