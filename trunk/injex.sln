@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "injexdll", "injexdll\injexd
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libudis86", "libudis86\libudis86.vcxproj", "{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConvenienceLib", "ConvenienceLib\ConvenienceLib.vcxproj", "{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -39,10 +41,18 @@ Global
 		{D9E1E6D8-86AF-419B-B488-0D15C525E819}.Release|x64.Build.0 = Release|x64
 		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Debug|Win32.ActiveCfg = Debug|Win32
 		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Debug|Win32.Build.0 = Debug|Win32
-		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Debug|x64.ActiveCfg = Debug|Win32
+		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Debug|x64.ActiveCfg = Debug|x64
+		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Debug|x64.Build.0 = Debug|x64
 		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Release|Win32.ActiveCfg = Release|Win32
 		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Release|Win32.Build.0 = Release|Win32
-		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Release|x64.ActiveCfg = Release|Win32
+		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Release|x64.ActiveCfg = Release|x64
+		{0DB6CC5A-EBD5-4CA4-BABE-C976979BBBF5}.Release|x64.Build.0 = Release|x64
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Debug|Win32.Build.0 = Debug|Win32
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Debug|x64.ActiveCfg = Debug|Win32
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Release|Win32.ActiveCfg = Release|Win32
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Release|Win32.Build.0 = Release|Win32
+		{F83A4F2E-CD5E-413D-86A9-CACD71BB66F8}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

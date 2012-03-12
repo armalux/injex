@@ -111,6 +111,9 @@ BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress);
 */
 PVOID derefJump(PVOID pTargetAddress);
 
+/* Use this to get an address after ASLR has moved shit around. */
+PVOID getPostAslrAddr(PVOID ImageBaseOffset);
+
 /* Function prototype for the hooked MessageBox function. */
 INT WINAPI wrapperMessageBox(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType);
 
