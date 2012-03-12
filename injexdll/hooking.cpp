@@ -1,6 +1,8 @@
 #include "hooking.h"
 #include "udis86.h"
 #include "decode.h"
+#include <winternl.h>
+#include "conlib.h"
 
 /* Global udis86 object */
 ud_t g_ud_obj;
@@ -317,3 +319,32 @@ BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress)
 	}
 	return bRet;
 }
+
+/**
+	@brief	getPostAslrAddr calculated the new address of a function after windows has applied
+			address space layout randomization to the process.
+
+	@param	[IN] ImageBaseOffset - The address of the function inside the PE (Like what you see in IDA).
+
+	@return The new correct address (like what you would see in WinDbg/OllyDbg).
+**/
+PVOID getPostAslrAddr(PVOID ImageBaseOffset){
+	// Get the address if the Process Environment Block
+	PROCESS_BASIC_INFORMATION procBasicInfo = {0};
+	typedef NTSTATUS (WINAPI *fpNtQueryInformationProcess)(HANDLE ProcessHandle,PROCESSINFOCLASS ProcessInformationClass,PVOID ProcessInformation,ULONG ProcessInformationLength,PULONG ReturnLength);
+	fpNtQueryInformationProcess NtQueryInformationProcess = (fpNtQueryInformationProcess)GetProcAddress(GetModuleHandle(L"ntdll"),"NtQueryInformationProcess");
+	NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &procBasicInfo, sizeof(procBasicInfo), NULL);
+	
+	int PebImageBaseAddressOffset;
+#ifdef _WIN64
+	PebImageBaseAddressOffset = 0x10;
+#else
+	PebImageBaseAddressOffset = 0x08;
+#endif
+	
+	// Get the image base address from the Process Environment Block.
+	PVOID ImageBaseAddress = *(PVOID*)(PCHAR(procBasicInfo.PebBaseAddress) + PebImageBaseAddressOffset);
+
+	// Add the image base offset to the image base address to get the new address.
+	return PCHAR(ImageBaseAddress) + DWORD(ImageBaseOffset);
+};
