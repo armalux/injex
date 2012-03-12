@@ -1,4 +1,4 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
+﻿// dllmain.cpp : Defines the entry point for the DLL application.
 
 #include <Windows.h>
 #include <stdio.h>
@@ -11,13 +11,38 @@
 PENTRY_STUB_TRAMP pSaveFileStub;
 
 /* A typedef for the SaveFile function. */
-typedef int (__fastcall *fpSaveFile)(int,int,HWND hWnd,LPCWSTR lpFileName,BOOL bShareWritePermissions);
+typedef BOOL (__fastcall *fpSaveFile)(int,int,HWND hWnd,LPCWSTR lpFileName,BOOL bShareWritePermissions);
 
 /* A pointer to the "real" SaveFile function, for our use later. */
 fpSaveFile SaveFile;
 
 /* This is called in place of SaveFile after the hooks are layed. */
-int __fastcall fakeSaveFile(int aUnused,int bUnused,HWND hWnd,LPCWSTR lpFileName,BOOL bShareWritePermissions){
+BOOL __fastcall fakeSaveFile(int aUnused,int bUnused,HWND hWnd,LPCWSTR lpFileName,BOOL bShareWritePermissions){
+	/* We could just not save the file, then tell them we did...
+	░░░░░▄▄▄▄▀▀▀▀▀▀▀▀▄▄▄▄▄▄░░░░░░░
+	░░░░░█░░░░▒▒▒▒▒▒▒▒▒▒▒▒░░▀▀▄░░░░
+	░░░░█░░░▒▒▒▒▒▒░░░░░░░░▒▒▒░░█░░░
+	░░░█░░░░░░▄██▀▄▄░░░░░▄▄▄░░░░█░░
+	░▄▀▒▄▄▄▒░█▀▀▀▀▄▄█░░░██▄▄█░░░░█░
+	█░▒█▒▄░▀▄▄▄▀░░░░░░░░█░░░▒▒▒▒▒░█
+	█░▒█░█▀▄▄░░░░░█▀░░░░▀▄░░▄▀▀▀▄▒█
+	░█░▀▄░█▄░█▀▄▄░▀░▀▀░▄▄▀░░░░█░░█░
+	░░█░░░▀▄▀█▄▄░█▀▀▀▄▄▄▄▀▀█▀██░█░░
+	░░░█░░░░██░░▀█▄▄▄█▄▄█▄████░█░░░
+	░░░░█░░░░▀▀▄░█░░░█░█▀██████░█░░
+	░░░░░▀▄░░░░░▀▀▄▄▄█▄█▄█▄█▄▀░░█░░
+	░░░░░░░▀▄▄░▒▒▒▒░░░░░░░░░░▒░░░█░
+	░░░░░░░░░░▀▀▄▄░▒▒▒▒▒▒▒▒▒▒░░░░█░
+	░░░░░░░░░░░░░░▀▄▄▄▄▄░░░░░░░░█░░
+	Problem?
+	
+	// 33 C0	xor eax,eax
+	// 40 		inc eax
+	// C2 0C 00	ret 12
+	
+	return TRUE;
+	*/
+	
 	/* According to IDA Pro, a and b are never set when calling and are not used in the function. I think its a WoW64 thing. */
 	odprintf("Notepad called SaveFile(HWND 0x%08X, LPCWSTR \"%S\", BOOL %i)",hWnd,lpFileName,bShareWritePermissions);
 	
@@ -28,7 +53,7 @@ int __fastcall fakeSaveFile(int aUnused,int bUnused,HWND hWnd,LPCWSTR lpFileName
 	}
 
 	odprintf("Calling the real save file function...");
-	int ret = SaveFile(aUnused,bUnused,hWnd,lpFileName,bShareWritePermissions);
+	BOOL ret = SaveFile(aUnused,bUnused,hWnd,lpFileName,bShareWritePermissions);
 
 	odprintf("The real function returned %i",ret);
 
