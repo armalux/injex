@@ -329,22 +329,14 @@ BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress)
 	@return The new correct address (like what you would see in WinDbg/OllyDbg).
 **/
 PVOID getPostAslrAddr(PVOID ImageBaseOffset){
-	// Get the address if the Process Environment Block
-	PROCESS_BASIC_INFORMATION procBasicInfo = {0};
-	typedef NTSTATUS (WINAPI *fpNtQueryInformationProcess)(HANDLE ProcessHandle,PROCESSINFOCLASS ProcessInformationClass,PVOID ProcessInformation,ULONG ProcessInformationLength,PULONG ReturnLength);
-	fpNtQueryInformationProcess NtQueryInformationProcess = (fpNtQueryInformationProcess)GetProcAddress(GetModuleHandle(L"ntdll"),"NtQueryInformationProcess");
-	NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &procBasicInfo, sizeof(procBasicInfo), NULL);
-	
-	int PebImageBaseAddressOffset;
-#ifdef _WIN64
-	PebImageBaseAddressOffset = 0x10;
-#else
-	PebImageBaseAddressOffset = 0x08;
-#endif
-	
-	// Get the image base address from the Process Environment Block.
-	PVOID ImageBaseAddress = *(PVOID*)(PCHAR(procBasicInfo.PebBaseAddress) + PebImageBaseAddressOffset);
+	// Get the image base address from GetModuleHandle, since the HMODULE is just the image base address.
+	PVOID ImageBaseAddress = (PVOID)GetModuleHandle(NULL);
 
-	// Add the image base offset to the image base address to get the new address.
-	return PCHAR(ImageBaseAddress) + DWORD(ImageBaseOffset);
+	// Get the base of the code in memory.
+	IMAGE_DOS_HEADER* IDH = (IMAGE_DOS_HEADER*)ImageBaseAddress;
+	IMAGE_OPTIONAL_HEADER* IOH = (IMAGE_OPTIONAL_HEADER*)((BYTE*)ImageBaseAddress + IDH->e_lfanew + 24);
+	PVOID CodeBase = (PVOID)(IOH->ImageBase+IOH->BaseOfCode);
+
+	// Add the base offset of the code to the debased function address.
+	return PCHAR(CodeBase) + DWORD(ImageBaseOffset);
 };
