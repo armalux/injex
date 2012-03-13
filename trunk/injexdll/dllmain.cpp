@@ -16,6 +16,15 @@ typedef BOOL (__fastcall *fpSaveFile)(int,int,HWND hWnd,LPCWSTR lpFileName,BOOL 
 /* A pointer to the "real" SaveFile function, for our use later. */
 fpSaveFile SaveFile;
 
+/* = FunctionAddress - ( BaseOfCode + ImageBase ) */
+/* 
+	You can get IDA to give you the address to put here:
+	1. Edit -> Segments -> Rebase Program...
+	2. Enter "0" and press Ok.
+	3. Look at the new address displayed.
+*/
+PVOID SaveFileDebasedAddress = (PVOID)0x6CD7;
+
 /* This is called in place of SaveFile after the hooks are layed. */
 BOOL __fastcall fakeSaveFile(int aUnused,int bUnused,HWND hWnd,LPCWSTR lpFileName,BOOL bShareWritePermissions){
 	/* We could just not save the file, then tell them we did...
@@ -66,8 +75,8 @@ DWORD WINAPI layHooks()
 	BOOL bFunctionHooked = FALSE;
 	BOOL bSafeToCleanup = FALSE;
 
-	/* We get the address of the real function from its offset inside the Portable Executable which is 0x7CD7. */
-	fpSaveFile realSaveFile = (fpSaveFile)getPostAslrAddr((PVOID)0x7CD7);
+	/* We get the address of the real function from its offset inside the Portable Executable which is 0x6CD7. */
+	fpSaveFile realSaveFile = (fpSaveFile)getPostAslrAddr(SaveFileDebasedAddress);
 
 	odprintf("Patching SaveFile @ %p",realSaveFile);
 
