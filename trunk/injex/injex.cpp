@@ -13,6 +13,7 @@ int isNumeric(const char *s);
 
 int main(int argc, CHAR* argv[])
 {
+	// TODO: Rewrite the command line options parsing.
 	if(argc < 3){
 		printf("USAGE: injex.exe <dllToInject.dll> <[PID to inject into]|[Path to exe to start]> [args for exe]\r\n");
 		return -1;
@@ -65,6 +66,10 @@ int main(int argc, CHAR* argv[])
 
 		printf("proc: %d\r\n",proc);
 	}
+
+
+	// Credit for this method of injection goes to Jeffrey Ritcher!
+	// Explanation: http://www.codeproject.com/Articles/2082/API-hooking-revealed CTRL+F: "Injecting DLL by using CreateRemoteThread() API function"
 
 	printf("Injecting %s into pid %d.\r\n", argv[1], GetProcessId(proc));
 
