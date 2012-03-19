@@ -341,19 +341,6 @@ PVOID getPostAslrAddr(PVOID ImageBaseOffset){
 	return PCHAR(CodeBase) + DWORD(ImageBaseOffset);
 };
 
-/**
-	@brief	HookProcAddress will place an import address table hook based on the provided 
-			module and function names. Simply call this function again, but with the original
-			and replacement functions switched place to unhook.
-
-	@param	[IN] lpModuleName - The name of the module from which the target proceedure is imported.
-	@param	[IN] lpProcName - The name of the proceedure to hook.
-	@param	[IN] fpOriginal - A pointer to a void pointer. This will be used to store the original 
-			address of the function, so it can still be called by your code.
-	@param	[IN] fpReplacement - A pointer to the replacement function.
-
-	@return	0 on success. Non-Zero on failure (ie. the specified function isn't imported).
-**/
 DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fpReplacement){
 	// We convert to all caps for case-insensitivity.
 	CHAR ModuleName[MAX_PATH];
@@ -448,3 +435,8 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 
 	return 0;
 }
+
+
+DWORD EAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fpReplacement){
+	return -1;
+};
