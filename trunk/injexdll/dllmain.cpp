@@ -7,24 +7,37 @@
 #include "conlib.h"
 #include "hooklib.h"
 
-typedef BOOL (__stdcall *fpWriteFile)(HANDLE hFile,LPCVOID lpBuffer,DWORD nNumberOfBytesToWrite,LPDWORD lpNumberOfBytesWritten,LPOVERLAPPED lpOverlapped);
+typedef BOOL (__stdcall *fpWriteFile)(HANDLE hFile,
+									  LPCVOID lpBuffer,
+									  DWORD nNumberOfBytesToWrite,
+									  LPDWORD lpNumberOfBytesWritten,
+									  LPOVERLAPPED lpOverlapped);
 fpWriteFile realWriteFile;
 
-BOOL WINAPI fakeWriteFile(HANDLE hFile,LPCVOID lpBuffer,DWORD nNumberOfBytesToWrite,LPDWORD lpNumberOfBytesWritten,LPOVERLAPPED lpOverlapped){
+BOOL WINAPI fakeWriteFile(HANDLE hFile,
+	                      LPCVOID lpBuffer,
+						  DWORD nNumberOfBytesToWrite,
+						  LPDWORD lpNumberOfBytesWritten,
+						  LPOVERLAPPED lpOverlapped)
+{
 	odprintf("Writing to File...");
 
-	return realWriteFile(hFile, lpBuffer, nNumberOfBytesToWrite, lpNumberOfBytesWritten, lpOverlapped);
+	return realWriteFile(hFile,
+		                 lpBuffer,
+						 nNumberOfBytesToWrite,
+						 lpNumberOfBytesWritten,
+						 lpOverlapped);
 }
 
 DWORD WINAPI start(LPVOID lpParameter){
 	odprintf("Laying hooks inside %d.", GetCurrentProcessId());
+	// START YOU CODE HERE...
 
 	IAT_hook("kernel32.dll","WriteFile",(PVOID*)&realWriteFile,fakeWriteFile);
 
+	// STOP HERE.
 	odprintf("%d:%d exiting...", GetCurrentProcessId(), GetCurrentThreadId());
-
 	FreeLibraryAndExitThread(GetModuleHandle(NULL),0);
-
 	return 0;
 }
 
