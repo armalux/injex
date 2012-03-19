@@ -40,7 +40,7 @@ int main(int argc, CHAR* argv[])
 		//printf("Starting %s %s\r\n",lpApplicationName,CommandLine);
 		LPSTR cmdLine = GetCommandLineA();
 
-		cmdLine = (LPSTR)(cmdLine + strlen(argv[0]) + strlen(argv[1]) + 3);
+		cmdLine = argv[2];
 
 		printf("Starting new process to inject into:\r\n%s\r\n",cmdLine);
 

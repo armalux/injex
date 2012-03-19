@@ -340,3 +340,111 @@ PVOID getPostAslrAddr(PVOID ImageBaseOffset){
 	// Add the base offset of the code to the debased function address.
 	return PCHAR(CodeBase) + DWORD(ImageBaseOffset);
 };
+
+/**
+	@brief	HookProcAddress will place an import address table hook based on the provided 
+			module and function names. Simply call this function again, but with the original
+			and replacement functions switched place to unhook.
+
+	@param	[IN] lpModuleName - The name of the module from which the target proceedure is imported.
+	@param	[IN] lpProcName - The name of the proceedure to hook.
+	@param	[IN] fpOriginal - A pointer to a void pointer. This will be used to store the original 
+			address of the function, so it can still be called by your code.
+	@param	[IN] fpReplacement - A pointer to the replacement function.
+
+	@return	0 on success. Non-Zero on failure (ie. the specified function isn't imported).
+**/
+DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fpReplacement){
+	// We convert to all caps for case-insensitivity.
+	CHAR ModuleName[MAX_PATH];
+	for(DWORD i=0;i<strlen(lpModuleName)+1;i++){
+		ModuleName[i] = toupper(lpModuleName[i]);
+	}
+	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)GetModuleHandle(NULL);
+	PIMAGE_NT_HEADERS pNtHeader = (PIMAGE_NT_HEADERS)((DWORD)pDosHeader + pDosHeader->e_lfanew);
+	PIMAGE_DATA_DIRECTORY pDataDir = &pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	PIMAGE_IMPORT_DESCRIPTOR pImpDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)((BYTE *)pDosHeader + pDataDir->VirtualAddress);
+
+	BOOL FoundImportModule = FALSE;
+	BOOL FoundImportFunction = FALSE;
+
+	for(;pImpDescriptor->Name!=NULL;pImpDescriptor++){
+		// We convert to all caps for case-insensitivity.
+		CHAR ImpModuleName[MAX_PATH];
+		for(DWORD i=0;i<strlen((char*)((BYTE *)pDosHeader + pImpDescriptor->Name))+1;i++){
+			ImpModuleName[i] = toupper((char)((BYTE *)pDosHeader + pImpDescriptor->Name)[i]);
+		}
+
+		// Is this the module we are looking for??
+		if(strcmp(ImpModuleName,ModuleName))
+			continue; // If not, then skip it.
+
+		FoundImportModule = TRUE;
+
+		PIMAGE_THUNK_DATA pOFThunk = (PIMAGE_THUNK_DATA)((BYTE *)pDosHeader + pImpDescriptor->OriginalFirstThunk);
+		PIMAGE_THUNK_DATA pFThunk = (PIMAGE_THUNK_DATA)((BYTE *)pDosHeader + pImpDescriptor->FirstThunk);
+
+		for(;pOFThunk->u1.Function != 0;pOFThunk++, pFThunk++){
+			PIMAGE_IMPORT_BY_NAME pOFTImportName = (PIMAGE_IMPORT_BY_NAME)((BYTE *)pDosHeader + pOFThunk->u1.AddressOfData);
+			PIMAGE_IMPORT_BY_NAME pFTImportName = (PIMAGE_IMPORT_BY_NAME)(pFThunk->u1.AddressOfData);
+			//char *szFunc = (char *)pImportName->Name;
+	
+			PCHAR FuncName = (PCHAR)pOFTImportName->Name;
+			//DWORD *Hint = (DWORD*)((BYTE *)pDosHeader + pOFThunk->u1.Function);
+			//PVOID FunctionAfterPatchSpace = pFTImportName->Name;
+			//PVOID FunctionPointer = (PVOID)pFThunk->u1.Function;
+
+			// Uncomment this line to see the import table stuff! :)
+			//printf("Function:\n\tName: %s\n\tHint: %hX\n\tAddress: %p\n\tPatch Address: %p\n", FuncName, Hint, FunctionAfterPatchSpace, FunctionPointer);
+
+			// Is this the function we are looking for?
+			if(strcmp(lpProcName, FuncName))
+				continue;
+
+			FoundImportFunction = TRUE;
+
+			//printf("Hooking Function:\n\tName: %s\n\tHint: %hX\n\tAddress: %p\n\tPatch Address: %p\n", FuncName, Hint, FunctionAfterPatchSpace, FunctionPointer);
+			
+			// Save off that function pointer for their use.
+			*fpOriginal = (PVOID)pFThunk->u1.Function;
+
+			// Windows Vista marks the Import Address Table as PAGE_EXECUTE_READ, so we can't tamper with it, but we will anyways.
+			MEMORY_BASIC_INFORMATION MemInfo;
+			VirtualQuery(&pFThunk->u1.Function, &MemInfo, sizeof(MemInfo));
+			DWORD oldProtect;
+			
+			// Remove these stupid protections...
+			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+			// Write in our pointer.
+			pFThunk->u1.Function = (DWORD_PTR)fpReplacement;
+
+			// Replace the protections, so if anyone asks, everything here is legit ;)
+			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, oldProtect, &oldProtect);
+
+			/* There is nothing that indicates that this next part is actually used for anything, and it has caused some phuquin strange bugs on Vista and 7.
+			// Lets temporarily remove these restrictions too...
+			VirtualQuery(&pFTImportName->Name, &MemInfo, sizeof(MemInfo));
+			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+
+			//NOTE: pFTImportName->Name is actually a function pointer too. It points to the "actual" function start.
+			PVOID *pFTINName = (PVOID*)&pFTImportName->Name;
+			*pFTINName = fpReplacement;
+			
+			// Replace the protections, so if anyone asks, everything here is legit ;)
+			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, oldProtect, &oldProtect);
+			*/
+		}
+	}
+
+	
+	// Module not imported.
+	if(FoundImportModule == FALSE)
+		return -1;
+
+	// Function not imported, but module is. Try Export Address Table hooking :)
+	if(!FoundImportFunction == FALSE)
+		return -2;
+
+	return 0;
+}
