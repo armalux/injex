@@ -435,8 +435,3 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 
 	return 0;
 }
-
-
-DWORD EAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fpReplacement){
-	return -1;
-};
