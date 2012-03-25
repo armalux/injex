@@ -1,5 +1,7 @@
 #summary How to edit the included DLL source.
+#sidebar TableOfContents
 
+<wiki:toc />
 = Introduction =
 
 The included project named "injexdll" should be edited to contain your own code for your specific use, compiled, then injected into your target application using [injex].
