@@ -1,5 +1,5 @@
-  * [Articles Components]
+  * [Components]
     * [Injex]
     * [InjexDLL]
   * [Articles HOWTO Articles]
-    * [ArticlesXSS Getting Started]
+    * [Article Getting Started]
