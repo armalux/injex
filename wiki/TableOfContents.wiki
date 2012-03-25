@@ -2,4 +2,4 @@
     * [Injex]
     * [InjexDLL]
   * [Articles HOWTO Articles]
-    * [Article Getting Started]
+    * [gettingstarted Getting Started]
