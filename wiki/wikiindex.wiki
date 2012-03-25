@@ -1,0 +1,6 @@
+#summary Injex Wiki Index
+#labels Featured
+
+= Introduction =
+
+Welcome to the Injex wiki. There is a table of contents to the left. If you don't know where to start, try [gettingstarted Getting Started].
