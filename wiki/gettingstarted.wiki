@@ -5,9 +5,9 @@
 
 Injex is a Visual Studio 2010 solution. You can download the latest release source from the [http://code.google.com/p/injex/downloads/list Downloads] section. It is designed to be a template to use to make your injectable DLL and a platform to inject it.
 
-= Getting The Latest Source =
+= Getting It Running =
 
-You can get the latest copy of the source running in just a few simple steps:
+You can get the latest copy of injex running in just a few simple steps:
 
   # Make sure you have the prerequisits:
     * Visual Studio 2010 installed or at least [http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express Visual C++ Express 2010].
