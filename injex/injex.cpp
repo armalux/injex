@@ -68,7 +68,7 @@ int main(int argc, CHAR* argv[])
 	DWORD pid = 0;
 	DWORD waitMs = 0;
 	BOOL startProcess;
-
+	
 	for(int i=1;i<argc;i++){
 		if(strcmp(argv[i],"-d") == 0){
 			dllArg = argv[++i];
@@ -129,17 +129,15 @@ int main(int argc, CHAR* argv[])
 		STARTUPINFOA			si;
 		GetStartupInfoA(&si);
 
-		char CommandLine[8191];
+		char CommandLine[8191] = {0};
 
 		// We put quotes around the program path to ensure it still works if it has spaces in it.
-		strcat_s(CommandLine, "\"");
-		strcat_s(CommandLine, programPath);
-		strcat_s(CommandLine, "\"");
+		sprintf(CommandLine,"\"%s\"", programPath);
 		if(procArgs != NULL){
-			strcat_s(CommandLine, " ");
-			strcat_s(CommandLine, procArgs);
+			strcat(CommandLine, " ");
+			strcat(CommandLine, procArgs);
 		}
-
+		
 		DWORD dwFlags = 0;
 		if(waitMs) dwFlags |= CREATE_SUSPENDED;
 		
@@ -172,7 +170,7 @@ int main(int argc, CHAR* argv[])
 		}
 	}
 
-	// Credit for this method of injection goes to Jeffrey Ritcher!
+	// Credit for this method of injection goes to Jeffrey Richter!
 	// Explanation: http://www.codeproject.com/Articles/2082/API-hooking-revealed CTRL+F: "Injecting DLL by using CreateRemoteThread() API function"
 
 	printf("Injecting %s into pid %d.\n", dllName, GetProcessId(proc));

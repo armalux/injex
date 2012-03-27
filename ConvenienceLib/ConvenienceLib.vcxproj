@@ -142,9 +142,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="ConLib.cpp" />
   </ItemGroup>
   <ItemGroup>
