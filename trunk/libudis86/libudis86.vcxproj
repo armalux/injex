@@ -135,9 +135,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="decode.c" />
     <ClCompile Include="input.c" />
     <ClCompile Include="itab.c" />

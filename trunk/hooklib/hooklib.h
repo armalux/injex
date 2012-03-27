@@ -138,4 +138,53 @@ PVOID getPostAslrAddr(PVOID ImageBaseOffset);
 **/
 DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fpReplacement);
 
+/**
+	@brief	Used to retrieve a VMT pointer from a class pointer in an application that was
+			compiled using Microsoft Visual C++. This can later be used for VMT hooking methods.
+
+	@param	[IN] pClassInstance - A pointer to the instance of the class.
+	
+	@return	A Pointer to the Virtual Method Table used by that class.
+
+	@link	http://www.mpgh.net/forum/289-alliance-valiant-arms-ava-tutorials/357643-vtable-hooking-vmt-hooking.html
+**/
+PVOID getVMTPointerMSVCPP(PVOID pClassInstance);
+
+/**
+	@brief	Used to set the VMT pointer for an instance of a class in an application that was
+			compiled using Microsoft Visual C++.
+
+	@param	[IN] pVmt - A pointer to a Virtual Method Table that the class will use.
+	@param	[IN] pClassInstance - A pointer to an instance of a class.
+
+	@return	TRUE on success, FALSE on failure to set the pointer.
+
+	@link	http://www.mpgh.net/forum/289-alliance-valiant-arms-ava-tutorials/357643-vtable-hooking-vmt-hooking.html
+**/
+BOOL setVMTPointerMSVCPP(PVOID pVmt, PVOID pClassInstance);
+
+/**
+	@brief	getInstructionLength decodes a single instruction at the address pAddr
+			and returns the length in bytes of that instruction.
+
+	@param	[IN] pAddr - The address of the instruction to disassemble.
+
+	@return	ULONG length in bytes of the instruction at pAddr.
+*/
+ULONG getInstructionLength(PVOID pAddr);
+
+/**
+	@brief	Write 0x90's to create a NOP sled at the specified address.
+
+	@param	[IN] pInstructions - A pointer to the instructions to overwrite with a nop sled.
+	@param	[IN] dwInstructionCount - The number of instructions to overwrite with NOPs.
+	@param	[OUT] pOriginalInstructions - (optional) A buffer to receive the instructions that were at 
+			the address before they get overwritten with NOPs. If this is NULL, the parameter is ignored.
+
+	@return	DWORD number of BYTES written.
+**/
+DWORD writeNopSled(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions);
+
+extern "C" VOID __fastcall UnloadSelfAndExit(HMODULE hModule);
+
 #endif //_HOOKING_H_

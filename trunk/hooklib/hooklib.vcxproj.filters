@@ -14,9 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="hooklib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -25,5 +22,13 @@
     <ClCompile Include="hooklib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <YASM Include="hooklib64.yasm">
+      <Filter>Source Files</Filter>
+    </YASM>
+    <YASM Include="hooklib86.yasm">
+      <Filter>Source Files</Filter>
+    </YASM>
   </ItemGroup>
 </Project>

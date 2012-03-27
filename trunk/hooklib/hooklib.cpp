@@ -25,14 +25,6 @@ VOID udisInit()
 	ud_set_syntax(&g_ud_obj, UD_SYN_INTEL);
 }
 
-/**
-	@brief	getInstructionLength decodes a single instruction at the address pAddr
-			and returns the length in bytes of that instruction.
-
-	@param	[IN] pAddr - The address of the instruction to disassemble.
-
-	@retval	ULONG length in bytes of the instruction at pAddr.
-*/
 ULONG getInstructionLength(PVOID pAddr)
 {
 	ULONG ulCurrInstrLen = 0;
@@ -377,12 +369,6 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 			//char *szFunc = (char *)pImportName->Name;
 	
 			PCHAR FuncName = (PCHAR)pOFTImportName->Name;
-			//DWORD *Hint = (DWORD*)((BYTE *)pDosHeader + pOFThunk->u1.Function);
-			//PVOID FunctionAfterPatchSpace = pFTImportName->Name;
-			//PVOID FunctionPointer = (PVOID)pFThunk->u1.Function;
-
-			// Uncomment this line to see the import table stuff! :)
-			//printf("Function:\n\tName: %s\n\tHint: %hX\n\tAddress: %p\n\tPatch Address: %p\n", FuncName, Hint, FunctionAfterPatchSpace, FunctionPointer);
 
 			// Is this the function we are looking for?
 			if(strcmp(lpProcName, FuncName))
@@ -390,8 +376,6 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 
 			FoundImportFunction = TRUE;
 
-			//printf("Hooking Function:\n\tName: %s\n\tHint: %hX\n\tAddress: %p\n\tPatch Address: %p\n", FuncName, Hint, FunctionAfterPatchSpace, FunctionPointer);
-			
 			// Save off that function pointer for their use.
 			*fpOriginal = (PVOID)pFThunk->u1.Function;
 
@@ -429,9 +413,52 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 	if(FoundImportModule == FALSE)
 		return -1;
 
-	// Function not imported, but module is. Try Export Address Table hooking :)
+	// Function not imported, but module is. :)
 	if(!FoundImportFunction == FALSE)
 		return -2;
 
 	return 0;
+}
+
+
+PVOID getVMTPointerMSVCPP(PVOID pClassInstance){
+	PVOID *ppVmtPointer = (PVOID*)pClassInstance;
+	return *ppVmtPointer;
+}
+
+
+BOOL setVMTPointerMSVCPP(PVOID pVmt, PVOID pClassInstance){
+	PVOID *ppVmtPointer = (PVOID*)pClassInstance;
+	*ppVmtPointer = pVmt;
+	return TRUE; // Yeah, it always works.
+}
+
+
+DWORD writeNopSled(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions){
+	PVOID pAddr = pInstructions;
+
+	// Count the bytes.
+	for(DWORD i=0;i<dwInstructionCount;i++){
+		 pAddr = (PVOID)((DWORD)pAddr + getInstructionLength(pAddr));
+	}
+
+	// This gets optimized out, but its nice to look at in C.
+	DWORD byteCount = (DWORD)pAddr - (DWORD)pInstructions;
+
+	// Just a nice way to look at things.
+	PBYTE pOpCode = (PBYTE)pInstructions;
+
+	// Save off the old bytes.
+	if(pOriginalInstructions != NULL){
+		for(DWORD i=0;i<byteCount;i++){
+			pOriginalInstructions[i] = pOpCode[i];
+		}
+	}
+
+	// Write NOP sled.
+	for(DWORD i=0;i<byteCount;i++){
+		pOpCode[i] = 0x90;
+	}
+
+	return byteCount;
 }

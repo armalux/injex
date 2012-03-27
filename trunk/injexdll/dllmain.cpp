@@ -32,19 +32,19 @@ BOOL WINAPI fakeWriteFile(HANDLE hFile,
 DWORD WINAPI start(LPVOID lpParameter){
 	odprintf("Laying hooks inside %d.", GetCurrentProcessId());
 	// START YOU CODE HERE...
-
-	IAT_hook("kernel32.dll","WriteFile",(PVOID*)&realWriteFile,fakeWriteFile);
+	
+		UnloadSelfAndExit((HMODULE)lpParameter);
+	//IAT_hook("kernel32.dll","WriteFile",(PVOID*)&realWriteFile,fakeWriteFile);
 
 	// STOP HERE.
 	odprintf("%d:%d exiting...", GetCurrentProcessId(), GetCurrentThreadId());
-	FreeLibraryAndExitThread(GetModuleHandle(NULL),0);
 	return 0;
 }
 
-void createNewThread(){
+void createNewThread(HMODULE hModule){
 	HANDLE t;
 	DWORD tid;
-	t = CreateThread(NULL, 0, start, NULL, 0, &tid);
+	t = CreateThread(NULL, 0, start, (LPVOID)hModule, 0, &tid);
 	odprintf("Created thread %d inside of process %d.", tid, GetCurrentProcessId());
 	CloseHandle(t);
 }
@@ -59,7 +59,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 		odprintf("Loading injexdll.dll!");
-		createNewThread();
+		createNewThread(hModule);
 		break;
 
 	case DLL_THREAD_ATTACH:
