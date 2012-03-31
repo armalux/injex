@@ -1,3 +1,13 @@
+/**
+	@brief	The C functional component of hooklib.
+	
+	@author	Eric Johnson (megamandos@gmail.com)
+	
+	@date	2012
+	
+	@private
+**/
+
 #include "hooklib.h"
 #include "udis86.h"
 #include "decode.h"
@@ -52,28 +62,6 @@ ULONG getInstructionLength(PVOID pAddr)
 	return ulCurrInstrLen;
 }
 
-/**
-	@brief	EntryStub_create takes a pointer to a PENTRY_STUB_TRAMP structure, a pointer to the
-			function that will be hooked, and the minimum number of bytes at the entry point of
-			the function to save off (these bytes will be replaced with our jump patch).
-
-			This function will allocate two buffers: One being the ENTRY_STUB_TRAMP that is
-			returned via the ppStub parameter, the other being the trampoline. The trampoline
-			will be at least ulMinPatchSize bytes long (longer if the disassembler determines)
-			plus the length of a jump. The first few bytes of the original function will be copied
-			into the trampoline, followed by a jump back to the original function starting at the
-			next instruction after the original bytes that were overwritten.
-
-			Note: The trampoline must be marked as PAGE_EXECUTE_READWRITE.
-
-	@param	[OUT] ppStub - Pointer to a PENTRRY_STUB_TRAMP structure.
-	@param	[IN] pOriginalEntryPoint - Pointer to the function to be hooked. Remember that this may
-			be a jump and in that case need to be dereferenced.
-	@param	[IN] ulMinPatchSize - Count of bytes of the jump patch that will overwrite the original
-			function entry point.
-
-	@retval	DWORD - HOOKING_SUCCESS if the function was successfully hooked, an error otherwise.
-*/
 DWORD EntryStub_create(PENTRY_STUB_TRAMP *ppStub, PVOID pOriginalEntryPoint, ULONG ulMinPatchSize)
 {
 	DWORD dwResult = HOOKING_SUCCESS;
@@ -170,28 +158,11 @@ DWORD EntryStub_create(PENTRY_STUB_TRAMP *ppStub, PVOID pOriginalEntryPoint, ULO
 	return dwResult;
 }
 
-/**
-	@brief	EntryStub_hook is a convenience wrapper around writeJump.
-
-	@param	[IN] pStub - A pointer to a PENTRY_STUB_TRAMP initialized by EntryStub_create.
-	@param	[IN] hooker - The hooker routine that will modify the original functions behavior.
-
-	@retval	BOOL - Passes along the return value of writeJump.
-*/
 BOOL EntryStub_hook(PENTRY_STUB_TRAMP pStub, PVOID hooker)
 {
 	return writeJump(pStub->pOriginalEntryPoint, hooker);
 }
 
-/**
-	@brief	EntryStub_unhook is a convenience wrapper around patchCode. This routine will
-			unhook a hooked function by re-writing the original bytes that were saved off in
-			the trampoline over the beginning of the hooked function.
-
-	@param	[IN] pStub - A pointer to a PENTRY_STUB_TRAMP initialized by EntryStub_create.
-
-	@retval	BOOL - Passes along the return value of patchCode.	
-*/
 BOOL EntryStub_unhook(PENTRY_STUB_TRAMP pStub)
 {
 	/* This re-writes the original first few bytes of the hooked function with what */
@@ -200,25 +171,12 @@ BOOL EntryStub_unhook(PENTRY_STUB_TRAMP pStub)
 	return patchCode(pStub->pOriginalEntryPoint, pStub->pTrampoline, pStub->ulOriginalEntrySize);
 }
 
-/**
-	@brief	EntryStub_free simply frees malloced buffers that were allocated by EntryStub_create.
-
-	@param	[IN] pStub - A pointer to a PENTRY_STUB_TRAMP initialized by EntryStub_create.
-*/
 VOID EntryStub_free(PENTRY_STUB_TRAMP pStub)
 {
 	free(pStub->pTrampoline);
 	free(pStub);
 }
 
-/**
-	@brief	derefJump. Given an address (of a function) try and determine if it is a jump to the actual function and
-			if so, get the actual address of the target function so we may patch it, and not the jump to it.
-
-	@param	[IN] pTargetAddress - The address to deref.
-
-	@retval	PVOID - The actual address of the function.
-**/
 PVOID derefJump(PVOID pTargetAddress)
 {
 	PVOID pDerefedAddress = NULL;
@@ -249,16 +207,6 @@ PVOID derefJump(PVOID pTargetAddress)
 	return pDerefedAddress;
 }
 
-/**
-	@brief	patchCode. This function will write cbPatchLen bytes of pPatchBytes over whatever lives at pTargetAddress.
-
-	@param	[IN] pTargetAddress - The address to patch.
-	@param	[IN] pPatchBytes - The patch code.
-	@param	[IN] cbPatchLen - The length of pPatchBytes in bytes.
-
-	@retval TRUE if the patch succeeded, FALSE if there was a problem.
-
-*/
 BOOL patchCode(PVOID pTargetAddress, PVOID pPatchBytes, ULONG cbPatchLen)
 {
 	BOOL bRet = FALSE;
@@ -287,17 +235,6 @@ BOOL patchCode(PVOID pTargetAddress, PVOID pPatchBytes, ULONG cbPatchLen)
 	return bRet;
 }
 
-/**
-	@brief	writeJump calculates the relative offset from a given function, pOriginalFunctionAddress, to a new function,
-			pNewTargetAddress. A five byte relative jump will be written at pOriginalFunctionAddress redirecting execution
-			to pNewTargetAddress.
-
-	@param	[IN] pOriginalFunctionAddress 
-	@param	[IN] pNewTargetAddress 
-
-	@retval	TRUE if the patch was written, FALSE otherwise.
-
-*/
 BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress)
 {
 	BOOL bRet = FALSE;
@@ -321,14 +258,6 @@ BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress)
 	return bRet;
 }
 
-/**
-	@brief	getPostAslrAddr calculated the new address of a function after windows has applied
-			address space layout randomization to the process.
-
-	@param	[IN] ImageBaseOffset - The address of the function inside the PE (Like what you see in IDA).
-
-	@return The new correct address (like what you would see in WinDbg/OllyDbg).
-**/
 PVOID getPostAslrAddr(PVOID ImageBaseOffset){
 	// Get the image base address from GetModuleHandle, since the HMODULE is just the image base address.
 	PVOID ImageBaseAddress = (PVOID)GetModuleHandle(NULL);
@@ -417,14 +346,13 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 		}
 	}
 
-	
 	// Module not imported.
 	if(FoundImportModule == FALSE)
-		return -1;
+		return 1;
 
 	// Function not imported, but module is. :)
-	if(!FoundImportFunction == FALSE)
-		return -2;
+	if(FoundImportFunction == FALSE)
+		return 2;
 
 	return 0;
 }
