@@ -7,7 +7,7 @@
 #include "conlib.h"
 #include "hooklib.h"
 
-typedef BOOL (__stdcall *fpWriteFile)(HANDLE hFile,
+/*typedef BOOL (__stdcall *fpWriteFile)(HANDLE hFile,
 									  LPCVOID lpBuffer,
 									  DWORD nNumberOfBytesToWrite,
 									  LPDWORD lpNumberOfBytesWritten,
@@ -27,15 +27,40 @@ BOOL WINAPI fakeWriteFile(HANDLE hFile,
 						 nNumberOfBytesToWrite,
 						 lpNumberOfBytesWritten,
 						 lpOverlapped);
+}*/
+
+LRESULT CALLBACK KeyboardHook(int nCode,WPARAM wParam,LPARAM lParam)
+{
+	KBDLLHOOKSTRUCT* key;
+	if(wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN){
+		key = (KBDLLHOOKSTRUCT*)lParam;
+
+		if(key->vkCode == VkKeyScan('a')){
+			odprintf("You pressed 'a'");
+		}
+
+		if(key->vkCode == VK_F1){
+			odprintf("You pressed F1");
+		}
+	}
+	
+	return 0;
 }
 
 DWORD WINAPI start(LPVOID lpParameter){
 	odprintf("Laying hooks inside %d.", GetCurrentProcessId());
 	// START YOU CODE HERE...
-	
-		UnloadSelfAndExit((HMODULE)lpParameter);
-	//IAT_hook("kernel32.dll","WriteFile",(PVOID*)&realWriteFile,fakeWriteFile);
 
+	HookKeyboard(KeyboardHook);
+
+	odprintf("Sleeping with the hook running, press some keys...");
+	Sleep(20000);
+	odprintf("Awake...");
+	
+	UnhookKeyboard();
+	
+	UnloadSelfAndExit((HMODULE)lpParameter);
+	
 	// STOP HERE.
 	odprintf("%d:%d exiting...", GetCurrentProcessId(), GetCurrentThreadId());
 	return 0;
@@ -54,7 +79,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                        LPVOID lpReserved
 					 )
 {
-	//odprintf("DLL: %p, TARGET: %p",hModule, GetModuleHandle(NULL));
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
@@ -63,6 +87,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		break;
 
 	case DLL_THREAD_ATTACH:
+		break;
+
 	case DLL_THREAD_DETACH:
 		break;
 

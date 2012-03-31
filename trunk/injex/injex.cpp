@@ -1,12 +1,13 @@
 // injex.cpp : Defines the entry point for the console application.
 //
-
+#pragma warning(disable:4995)
+#pragma warning(disable:4996)
 #include <Windows.h>
 #include <stdio.h>
 #include <strsafe.h>
-#include <winternl.h>
+#include "winstructs.h"
 #include "conlib.h"
-//#include <Shlwapi.h>
+//#include <winternl.h>
 
 BOOL InjectDLL(DWORD ProcessID);
 void __cdecl odprintf(const char *format, ...);
@@ -16,7 +17,6 @@ int isNumeric(const char *s);
 void ErrorExit(LPTSTR lpszFunction, LPCSTR lpAdditionalHelp) 
 { 
     // Retrieve the system error message for the last-error code
-
     LPVOID lpMsgBuf;
     LPVOID lpDisplayBuf;
     DWORD dw = GetLastError(); 
@@ -155,6 +155,8 @@ int main(int argc, CHAR* argv[])
 		proc = pi.hProcess;
 	}
 	else{
+
+		// TODO: Add thread suspension for open processes.
 		proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
 
 		if(proc == NULL)
@@ -200,7 +202,7 @@ int main(int argc, CHAR* argv[])
 		printf("Waiting %ims for DLL to lay hooks before resuming the process.\n",waitMs);
 		Sleep(waitMs);
 		for(DWORD i=0;i<threadCount;i++){
-			printf("Resuming Thread %d in Process %d...\n", GetThreadId(threads[i]), GetProcessId(proc));
+			printf("Resuming threads in process %d...\n", GetProcessId(proc));
 			ResumeThread(threads[i]);
 		}
 	}

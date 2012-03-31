@@ -1,27 +1,7 @@
 BITS 64
 DEFAULT REL
 
-%define MEM_COMMIT	 0x1000
-%define MEM_RESERVE  0x2000
-%define MEM_RESET	0x80000
-
-%define MEM_LARGE_PAGES		0x20000000
-%define MEM_PHYSICAL		  0x400000
-%define MEM_TOP_DOWN		  0x100000
-%define MEM_WRITE_WATCH		  0x200000
-
-%define PAGE_NOACCESS			0x01
-%define PAGE_READONLY			0x02
-%define PAGE_READWRITE			0x04
-%define PAGE_WRITECOPY			0x08
-%define PAGE_EXECUTE			0x10
-%define PAGE_EXECUTE_READ		0x20
-%define	PAGE_EXECUTE_READWRITE	0x40
-%define PAGE_EXECUTE_WRITECOPY	0x80
-
-%define PAGE_GUARD				0x100
-%define PAGE_NOCACHE			0x200
-%define PAGE_WRITECOMBINE		0x400
+%include "defines.yasm"
 
 global UnloadSelfAndExit
 extern VirtualAlloc,GetProcAddress,GetModuleHandleA
@@ -48,8 +28,6 @@ UnloadSelfAndExit:
 	sub rsp, 20h
 	call VirtualAlloc
 	add rsp, 20h
-
-	mov rbx, rax
 
 	mov rdi, rax
 	lea rsi, [unload_self]
@@ -108,7 +86,7 @@ cExitThread: db "ExitThread",0
 struc unload_self_config
 	.hModule			resq	1
 	.fpExitThread		resq	1
-	.fpFreeLibrary	resq	1
+	.fpFreeLibrary		resq	1
 endstruc
 
 unload_self:
@@ -129,9 +107,9 @@ unload_self:
 	xor rcx,rcx
 	mov rax, [rbp+unload_self_config.fpExitThread]
 	
-	sub rsp, 20h
+	sub rsp, 28h
 	call rax ; Never actually returns.
-	add rsp, 20h
+	add rsp, 28h
 	
 	ret
 .a:
