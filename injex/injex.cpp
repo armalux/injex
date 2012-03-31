@@ -1,5 +1,24 @@
-// injex.cpp : Defines the entry point for the console application.
-//
+/** 
+	@file	injex.cpp
+	
+	@brief	The functional portion of the injector.
+	
+	@private
+	
+	@todo	Look into using SetWindowsHookEx for DLL Injection.
+	@todo	Make this file's functionality into a library and 
+			just reference that functionality from here.
+			
+	@ingroup	InjexInjector
+	
+**/
+
+/**
+	@brief		Usage of Injex.exe for injecting DLLs into processes.
+	@defgroup	InjexInjector Injecting With Injex
+**/
+
+
 #pragma warning(disable:4995)
 #pragma warning(disable:4996)
 #include <Windows.h>
@@ -7,13 +26,24 @@
 #include <strsafe.h>
 #include "winstructs.h"
 #include "conlib.h"
-//#include <winternl.h>
 
-BOOL InjectDLL(DWORD ProcessID);
+/** @private */
 void __cdecl odprintf(const char *format, ...);
+
+/** @private */
 int isNumeric(const char *s);
 
-// This function is pretty much straight from http://msdn.microsoft.com/en-us/library/windows/desktop/ms680582(v=vs.85).aspx
+/**
+	@brief	This function is pretty much straight from http://msdn.microsoft.com/en-us/library/windows/desktop/ms680582(v=vs.85).aspx
+	@note	It is edited for console output, but thats about it.
+	
+	@param[in]	lpszFunction - The function that failed.
+	@param[in]	lpAdditionalHelp - Any sort of additional information that might be useful for the user.
+	
+	@return	Nothing, execution does not return from this function.
+	
+	@private
+**/
 void ErrorExit(LPTSTR lpszFunction, LPCSTR lpAdditionalHelp) 
 { 
     // Retrieve the system error message for the last-error code
@@ -50,6 +80,11 @@ void ErrorExit(LPTSTR lpszFunction, LPCSTR lpAdditionalHelp)
     ExitProcess(dw);
 }
 
+/**
+	@brief	Just prints out a usage statement.
+	
+	@private
+**/
 void Usage(){
 	printf("Usage: injex -d <dllName> < -b <binary name> [-a <arguments>] | -p <Process ID> > [-w <milliseconds>]\n");
 	printf("  -d: Specify the DLL to inject.\n");
@@ -60,6 +95,11 @@ void Usage(){
 	ExitProcess(-1);
 }
 
+/**
+	@brief	herp derp.
+	
+	@private
+**/
 int main(int argc, CHAR* argv[])
 {
 	char *dllArg = NULL;
@@ -119,7 +159,7 @@ int main(int argc, CHAR* argv[])
 
 	// Used for keeping track of the suspended threads.
 	DWORD threadCount = 0;
-	// Assuming 1MB stacks, 2048*1MB =~ 2GB. I am assuming that the thread count in an application will never exceed this due to hardware contraints. 
+	// Assuming 1MB stacks, 2048*1MB =~ 2GB. I am ASSUMING that the thread count in an application will never exceed this due to hardware contraints. 
 	#define MAX_THREADS 2048
 	HANDLE threads[MAX_THREADS];
 
@@ -172,8 +212,10 @@ int main(int argc, CHAR* argv[])
 		}
 	}
 
-	// Credit for this method of injection goes to Jeffrey Richter!
-	// Explanation: http://www.codeproject.com/Articles/2082/API-hooking-revealed CTRL+F: "Injecting DLL by using CreateRemoteThread() API function"
+	/**
+		@brief	Credit for this method of injection goes to Jeffrey Richter!
+		@sa		http://www.codeproject.com/Articles/2082/API-hooking-revealed CTRL+F: "Injecting DLL by using CreateRemoteThread() API function"
+	*/
 
 	printf("Injecting %s into pid %d.\n", dllName, GetProcessId(proc));
 
@@ -213,6 +255,7 @@ int main(int argc, CHAR* argv[])
 	return 0;
 }
 
+/** @private */
 int isNumeric (const char * s)
 {
     if (s == NULL || *s == '\0' || isspace(*s))
