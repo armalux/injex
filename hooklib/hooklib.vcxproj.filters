@@ -31,4 +31,9 @@
       <Filter>Source Files</Filter>
     </YASM>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="defines.yasm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

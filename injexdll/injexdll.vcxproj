@@ -165,6 +165,11 @@
     </ProjectReference>
     <ProjectReference Include="..\hooklib\hooklib.vcxproj">
       <Project>{6aa8abf5-eed3-457e-9094-0f1fcb39bc64}</Project>
+      <Private>true</Private>
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+      <UseLibraryDependencyInputs>false</UseLibraryDependencyInputs>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

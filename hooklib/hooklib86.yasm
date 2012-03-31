@@ -1,2 +1,120 @@
 BITS 32
 
+%include "defines.yasm"
+
+global _UnloadSelfAndExit@4
+extern _VirtualAlloc@16,_GetProcAddress@8,_GetModuleHandleA@4
+
+section .text
+
+struc UnloadSelfAndExitArgs
+	.SavedEBP		resd	1
+	.returnPointer	resd	1
+	.hModule		resd	1
+endstruc
+
+_UnloadSelfAndExit@4:
+	push ebp
+	mov ebp, esp
+
+	mov eax, PAGE_EXECUTE_READWRITE
+	push eax
+
+	xor eax,eax
+	or eax, MEM_COMMIT
+	or eax, MEM_RESERVE
+	push eax
+
+	mov eax, unload_self_size + unload_self_config_size
+	push eax
+
+	push 0
+
+	call _VirtualAlloc@16
+
+	mov edi, eax
+	lea esi, [unload_self]
+	mov ecx, unload_self_size
+	rep movsb
+	
+	mov ebx, edi ; We aren't coming back from this, so we might as well clobber ebx :)
+
+	lea eax, [cFreeLibrary]
+	push eax
+	lea eax, [cKernel32]
+	push eax
+	call _HelpGetProcAddress@8
+
+	mov [ebx+unload_self_config.fpFreeLibrary], eax
+
+	lea eax, [cExitThread]
+	push eax
+	lea eax, [cKernel32]
+	push eax
+	call _HelpGetProcAddress@8
+
+	mov [ebx+unload_self_config.fpExitThread], eax
+
+	mov eax, [ebp + UnloadSelfAndExitArgs.hModule]
+	mov [ebx + unload_self_config.hModule], eax
+
+	lea eax, [ebx - unload_self_size]
+	jmp eax
+
+	pop ebp
+	ret 4
+
+struc HelpGetProcAddressArgs
+	.SavedEBP		resd	1
+	.returnPointer	resd	1
+	.lpModuleName	resd	1
+	.lpFunctionName	resd	1
+endstruc
+
+_HelpGetProcAddress@8:
+	push ebp
+	mov ebp, esp
+
+	mov eax, [ebp + HelpGetProcAddressArgs.lpModuleName]
+	push eax ; Module Name
+	call _GetModuleHandleA@4
+
+	mov ecx, [ebp + HelpGetProcAddressArgs.lpFunctionName]
+	push ecx ; Function Name
+	push eax ; The module base address.
+	call _GetProcAddress@8
+
+	pop ebp
+	ret 8
+	
+cKernel32: db "Kernel32.dll",0
+cFreeLibrary: db "FreeLibrary",0
+cExitThread: db "ExitThread",0
+
+struc unload_self_config
+	.hModule			resd	1
+	.fpExitThread		resd	1
+	.fpFreeLibrary		resd	1
+endstruc
+
+unload_self:
+	jmp .a
+.b:
+	pop ebp
+
+	mov eax, [ebp + unload_self_config.hModule]
+	push eax
+
+	mov eax, [ebp + unload_self_config.fpFreeLibrary]
+	call eax
+
+	push 0
+	mov eax, [ebp + unload_self_config.fpExitThread]
+	call eax
+
+.a:
+	call .b
+
+unload_self_size: equ $-unload_self
+; We're pretending there is an unload_self_config struc here...
+

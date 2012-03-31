@@ -172,6 +172,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </YASM>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="defines.yasm" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\yasm\x86\vsyasm.targets" />

@@ -174,17 +174,46 @@ BOOL setVMTPointerMSVCPP(PVOID pVmt, PVOID pClassInstance);
 ULONG getInstructionLength(PVOID pAddr);
 
 /**
-	@brief	Write 0x90's to create a NOP sled at the specified address.
+	@brief	Write 0x90's over the specified number of instructions at the specified address.
 
 	@param	[IN] pInstructions - A pointer to the instructions to overwrite with a nop sled.
 	@param	[IN] dwInstructionCount - The number of instructions to overwrite with NOPs.
 	@param	[OUT] pOriginalInstructions - (optional) A buffer to receive the instructions that were at 
 			the address before they get overwritten with NOPs. If this is NULL, the parameter is ignored.
 
-	@return	DWORD number of BYTES written.
+	@return	DWORD number of BYTES overwritten.
 **/
-DWORD writeNopSled(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions);
+DWORD nopInstructions(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions);
 
-extern "C" VOID __fastcall UnloadSelfAndExit(HMODULE hModule);
+/**
+	@brief	Prints out the bytes at the specified location, for dynamic memory inspection.
+
+	@param	[IN] pBytes - A pointer to the bytes to print.
+	@param	[IN] count - The number of bytes to print.
+**/
+void printBytes(PBYTE pBytes, DWORD count, PCHAR lpOut);
+
+
+/**
+	@brief	Sets up a low level keyboard hook for setting up hotkeys.
+
+	@param	[IN] kbHookFunction - The function to call when a keyboard event occures.
+	
+	@return	0 on success, -1 on failure.
+
+	@link	http://www.mpgh.net/forum/31-c-c-programming/201964-c-c-vc-snippets.html#post2807915
+	
+**/
+typedef LRESULT (CALLBACK *fpKeyboardHook)(int nCode,WPARAM wParam,LPARAM lParam);
+int HookKeyboard(fpKeyboardHook kbHookFunction);
+
+/**
+	@brief	Removes the keyboard hook.
+
+	@link	http://www.mpgh.net/forum/31-c-c-programming/201964-c-c-vc-snippets.html#post2807915
+**/
+BOOL UnhookKeyboard();
+
+extern "C" VOID __stdcall UnloadSelfAndExit(HMODULE hModule);
 
 #endif //_HOOKING_H_

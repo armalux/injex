@@ -21,6 +21,14 @@ VOID udisInit()
 	g_ud_obj = ud_obj;
 
 	ud_init(&g_ud_obj);
+	uint8_t mode;
+
+	#ifdef _WIN64
+	mode=64;
+	#else
+	mode=32;
+	#endif
+
 	ud_set_mode(&g_ud_obj, 32);
 	ud_set_syntax(&g_ud_obj, UD_SYN_INTEL);
 }
@@ -40,6 +48,7 @@ ULONG getInstructionLength(PVOID pAddr)
 	{
 		ulCurrInstrLen = 0;
 	}
+
 	return ulCurrInstrLen;
 }
 
@@ -209,7 +218,7 @@ VOID EntryStub_free(PENTRY_STUB_TRAMP pStub)
 	@param	[IN] pTargetAddress - The address to deref.
 
 	@retval	PVOID - The actual address of the function.
-*/
+**/
 PVOID derefJump(PVOID pTargetAddress)
 {
 	PVOID pDerefedAddress = NULL;
@@ -434,7 +443,7 @@ BOOL setVMTPointerMSVCPP(PVOID pVmt, PVOID pClassInstance){
 }
 
 
-DWORD writeNopSled(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions){
+DWORD nopInstructions(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOriginalInstructions){
 	PVOID pAddr = pInstructions;
 
 	// Count the bytes.
@@ -462,3 +471,73 @@ DWORD writeNopSled(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOrigina
 
 	return byteCount;
 }
+
+void printBytes(PBYTE pBytes, DWORD count, PCHAR lpOut){
+	for(DWORD i=0;i<count;i++){
+		if(i % 16 == 0){
+			lpOut++[0]='\n';
+			lpOut += sprintf(lpOut, "0x%p:  ", &pBytes[i]);
+		}
+
+		lpOut += sprintf(lpOut, "%02hhX ",pBytes[i]);
+	}
+}
+
+HANDLE g_kbHookThread=INVALID_HANDLE_VALUE;
+HHOOK g_kbHook=NULL;
+DWORD g_dwHookThreadId=0;
+fpKeyboardHook g_kbHookFunction=NULL;
+
+LRESULT CALLBACK _KeyboardHookProc(int nCode,WPARAM wParam,LPARAM lParam){
+	g_kbHookFunction(nCode,wParam,lParam);
+	return CallNextHookEx(g_kbHook,nCode,wParam,lParam);
+};
+
+int _KeyboardHookThread(fpKeyboardHook kbHookFunction){
+	// Set the hook
+	odprintf("Keyboard hook set...");
+	g_kbHook = SetWindowsHookEx(WH_KEYBOARD_LL,_KeyboardHookProc,GetModuleHandle(NULL),0);
+	
+	// GetMessage: "If the function retrieves the WM_QUIT message, the return value is zero."
+	MSG msg;
+	while(GetMessage(&msg,0,0,0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	odprintf("Removing keyboard hook.");
+
+	// Remove the hook
+	UnhookWindowsHookEx(g_kbHook);
+	
+	odprintf("Keyboard hook removed.");
+	
+	g_dwHookThreadId = 0;
+	g_kbHookThread = INVALID_HANDLE_VALUE;
+	g_kbHook = NULL;
+	g_kbHookFunction = NULL;
+
+	return 0;
+}
+
+int HookKeyboard(fpKeyboardHook kbHookFunction){
+
+	if(g_kbHookThread == INVALID_HANDLE_VALUE){
+		g_kbHookFunction = kbHookFunction;
+		g_kbHookThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)_KeyboardHookThread,(LPVOID)kbHookFunction, 0, &g_dwHookThreadId);
+	} else {
+		odprintf("We cannot create another keyboard hook, we already have one active.");
+		return -1;
+	}
+
+	return 0;
+}
+
+BOOL UnhookKeyboard(){
+	// Send WM_QUIT to the keyboard hook thread.
+	if(g_dwHookThreadId == 0)
+		return TRUE;
+	return PostThreadMessage(g_dwHookThreadId,WM_QUIT,0,0);
+}
+
