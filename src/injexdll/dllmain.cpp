@@ -7,28 +7,6 @@
 #include "conlib.h"
 #include "hooklib.h"
 
-/*typedef BOOL (__stdcall *fpWriteFile)(HANDLE hFile,
-									  LPCVOID lpBuffer,
-									  DWORD nNumberOfBytesToWrite,
-									  LPDWORD lpNumberOfBytesWritten,
-									  LPOVERLAPPED lpOverlapped);
-fpWriteFile realWriteFile;
-
-BOOL WINAPI fakeWriteFile(HANDLE hFile,
-	                      LPCVOID lpBuffer,
-						  DWORD nNumberOfBytesToWrite,
-						  LPDWORD lpNumberOfBytesWritten,
-						  LPOVERLAPPED lpOverlapped)
-{
-	odprintf("Writing to File...");
-
-	return realWriteFile(hFile,
-		                 lpBuffer,
-						 nNumberOfBytesToWrite,
-						 lpNumberOfBytesWritten,
-						 lpOverlapped);
-}*/
-
 LRESULT CALLBACK KeyboardHook(int nCode,WPARAM wParam,LPARAM lParam)
 {
 	KBDLLHOOKSTRUCT* key;
@@ -54,7 +32,7 @@ DWORD WINAPI start(LPVOID lpParameter){
 	HookKeyboard(KeyboardHook);
 
 	odprintf("Sleeping with the hook running, press some keys...");
-	Sleep(20000);
+	Sleep(25000);
 	odprintf("Awake...");
 	
 	UnhookKeyboard();

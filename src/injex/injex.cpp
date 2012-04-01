@@ -8,14 +8,6 @@
 	@todo	Look into using SetWindowsHookEx for DLL Injection.
 	@todo	Make this file's functionality into a library and 
 			just reference that functionality from here.
-			
-	@ingroup	InjexInjector
-	
-**/
-
-/**
-	@brief		Usage of Injex.exe for injecting DLLs into processes.
-	@defgroup	InjexInjector Injecting With Injex
 **/
 
 
@@ -24,14 +16,13 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <strsafe.h>
+#include <Psapi.h>
 #include "winstructs.h"
 #include "conlib.h"
 
-/** @private */
 void __cdecl odprintf(const char *format, ...);
-
-/** @private */
 int isNumeric(const char *s);
+WCHAR *GetFileName(WCHAR *path);
 
 /**
 	@brief	This function is pretty much straight from http://msdn.microsoft.com/en-us/library/windows/desktop/ms680582(v=vs.85).aspx
@@ -89,9 +80,10 @@ void Usage(){
 	printf("Usage: injex -d <dllName> < -b <binary name> [-a <arguments>] | -p <Process ID> > [-w <milliseconds>]\n");
 	printf("  -d: Specify the DLL to inject.\n");
 	printf("  -b: Specify a binary to run then inject into.\n");
-	printf("  -a: Used in conjunction with '-b' to provide command line arguments to the program to inject into.\n");
-	printf("  -p: Use instead of '-b' to inject into an application that is already running.\n");
-	printf("  -w: Use with '-b' when running an application to start it suspended and allow <milliseconds>\n      for the injected DLL to lay hooks before resuming it.\n");
+	printf("  -a: Used in conjunction with '-b' to provide command line arguments to the\n      program to inject into.\n");
+	printf("  -p: Use instead of '-b' to inject into an application that is already \n      running.\n");
+	printf("  -w: Use with '-b' when running an application to start it suspended and \n      allow <milliseconds> for the injected DLL to lay hooks before\n      resuming it.\n");
+	printf("  -n: The name of the running process (ie. explorer.exe) to inject into. If\n      there are multiple copies of the named process running, this will inject\n      into the first process with the specified name that it finds.\n");
 	ExitProcess(-1);
 }
 
@@ -105,10 +97,42 @@ int main(int argc, CHAR* argv[])
 	char *dllArg = NULL;
 	char *programPath = NULL;
 	char *procArgs = NULL;
+	WCHAR procNameBuffer[MAX_PATH] = {0};
+	PWCHAR procName = NULL;
 	DWORD pid = 0;
 	DWORD waitMs = 0;
 	BOOL startProcess;
 	
+	if(argc==1){
+		Usage();
+	}
+
+	// Get Windows Version Information.
+	OSVERSIONINFOEX OsInfo = {0};
+	OsInfo.dwOSVersionInfoSize = sizeof(OsInfo);
+	GetVersionEx((LPOSVERSIONINFO)&OsInfo);
+
+	// These are used later to make decisions on how to do things.
+	BOOL is2kOrAbove = FALSE;
+	BOOL isXpOrAbove = FALSE;
+	BOOL isVistaOrAbove = FALSE;
+	BOOL is7OrAbove = FALSE;
+
+	if(OsInfo.dwMajorVersion >= 6){
+		isVistaOrAbove = TRUE;
+		if(OsInfo.dwMinorVersion >= 1){
+			is7OrAbove = TRUE;
+		}
+	}
+
+	if(OsInfo.dwMajorVersion >= 5){
+		is2kOrAbove = TRUE;
+		if(OsInfo.dwMinorVersion >= 1){
+			isXpOrAbove = TRUE;
+		}
+	}
+
+
 	for(int i=1;i<argc;i++){
 		if(strcmp(argv[i],"-d") == 0){
 			dllArg = argv[++i];
@@ -135,6 +159,19 @@ int main(int argc, CHAR* argv[])
 		} else if(strcmp(argv[i],"-w") == 0) {
 			waitMs = atoi(argv[++i]);
 
+		} else if (strcmp(argv[i],"-n") == 0) {
+			
+			if(isXpOrAbove == FALSE){
+				printf("ERROR: Selecting a process by name is only supported on Windows XP or above. Please use process id instead.");
+				Usage();
+			}
+
+			i++;
+			procName = procNameBuffer;
+			MultiByteToWideChar(CP_UTF8, 0, argv[i], INT(strlen(argv[i])), procName, MAX_PATH);
+
+			startProcess = FALSE;
+
 		} else {
 			printf("ERROR: Unknown command line option \"%s\"\n",argv[i]);
 			Usage();
@@ -142,8 +179,8 @@ int main(int argc, CHAR* argv[])
 	}
 
 	// Validate their command line options.
-	if(pid == 0 && programPath == NULL){
-		printf("ERROR: Please specify either a Process ID or a binary to launch.\n");
+	if(pid == 0 && programPath == NULL && procName==0){
+		printf("ERROR: Please specify either a Process ID, a binary to launch, or the name of a running process.\n");
 		Usage();
 	} else if(dllArg == NULL){
 		printf("ERROR: Please specify a DLL to inject.\n");
@@ -155,7 +192,7 @@ int main(int argc, CHAR* argv[])
 	GetFullPathNameA(dllArg,MAX_PATH,dllName,NULL);
 
 	// The handle of the process we will inject into.
-	HANDLE proc;
+	HANDLE proc=INVALID_HANDLE_VALUE;
 
 	// Used for keeping track of the suspended threads.
 	DWORD threadCount = 0;
@@ -195,20 +232,62 @@ int main(int argc, CHAR* argv[])
 		proc = pi.hProcess;
 	}
 	else{
+		// Find the Pid of the process if they specified it with a name.
+		if(procName != NULL){
 
-		// TODO: Add thread suspension for open processes.
-		proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+			// Assuming that the computer this runs on wont have more than 2048 processes.
+			DWORD ProcessIds[2048];
+			DWORD dwProcessIdBytes;
+			
+			EnumProcesses(ProcessIds, sizeof(ProcessIds), &dwProcessIdBytes);
 
-		if(proc == NULL)
-		{
-			ErrorExit(TEXT("OpenProcess"), "Check the provided Process Id.");
-			return -1;
+			// Now we look at each process.
+			for(DWORD i=0;i<dwProcessIdBytes/sizeof(DWORD);i++){
+				proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION, FALSE, ProcessIds[i]);
+
+				// We probably don't have permissions to mess with it.
+				if(proc==INVALID_HANDLE_VALUE){
+					continue;
+				}
+
+				// Lets get the name of the process.
+				WCHAR procQueryName[MAX_PATH];
+				WCHAR *procFileName;
+				GetModuleFileNameExW(proc, 0, procQueryName, MAX_PATH);
+
+				if(wcslen(procQueryName) == 284 || wcslen(procQueryName) == 285){
+					continue;
+				}
+				procFileName = GetFileName(procQueryName);
+
+				// Break if the name matches the one we are searching for.
+				if(wcscmp(procFileName, procName) == 0){
+					pid = GetProcessId(proc);
+					break;
+				}
+
+				CloseHandle(proc);
+			}
+
+			if(pid==0){
+				printf("ERROR: Failed to find a process by the name of '%S'.\n", procName);
+				ExitProcess(-1);
+			}
+
+		} else {
+
+			// TODO: Add thread suspension for open processes.
+			proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+
+			if(proc == NULL)
+			{
+				ErrorExit(TEXT("OpenProcess"), "Check the Process Id that you provided.");
+				return -1;
+			}
 		}
 
-		printf("proc: %d\n",proc);
-
 		if(waitMs){
-
+			/** @todo Add the ability to suspend already running processes. */
 		}
 	}
 
@@ -263,4 +342,18 @@ int isNumeric (const char * s)
     char * p;
     strtod (s, &p);
     return *p == '\0';
+}
+
+// Thanks to Jonathan Wood from stackoverflow.com for this.
+// Returns filename portion of the given path
+// Returns empty string if path is directory
+WCHAR *GetFileName(WCHAR *path)
+{
+    WCHAR *filename = wcsrchr(path, WCHAR(0x5C));
+    if (filename == NULL)
+        filename = path;
+    else
+        filename++;
+
+    return filename;
 }
