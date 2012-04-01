@@ -341,6 +341,16 @@ DWORD nopInstructions(PVOID pInstructions, DWORD dwInstructionCount, PBYTE pOrig
 **/
 VOID printBytes(PBYTE pBytes, DWORD count, PCHAR lpOut);
 
+/**
+	@brief	Used as a prototype standard for keyboard hook callback functions.
+	
+	@sa		http://msdn.microsoft.com/en-us/library/windows/desktop/ms644985(v=vs.85).aspx
+	
+	@typedef	fpKeyboardHook
+	
+	@ingroup	LowLevelKeyboardHooking
+**/
+typedef LRESULT (CALLBACK *fpKeyboardHook)(int nCode,WPARAM wParam,LPARAM lParam);
 
 /**
 	@brief	Sets up a low level keyboard hook for setting up system-wide hotkeys,
@@ -356,17 +366,6 @@ VOID printBytes(PBYTE pBytes, DWORD count, PCHAR lpOut);
 	@ingroup	LowLevelKeyboardHooking
 **/
 int HookKeyboard(fpKeyboardHook kbHookFunction);
-
-/**
-	@brief	Used as a prototype standard for keyboard hook callback functions.
-	
-	@sa		http://msdn.microsoft.com/en-us/library/windows/desktop/ms644985(v=vs.85).aspx
-	
-	@typedef	fpKeyboardHook
-	
-	@ingroup	LowLevelKeyboardHooking
-**/
-typedef LRESULT (CALLBACK *fpKeyboardHook)(int nCode,WPARAM wParam,LPARAM lParam);
 
 /**
 	@brief	Removes the keyboard hook.
