@@ -1,0 +1,119 @@
+BITS 64
+DEFAULT REL
+
+%include "defines.yasm"
+
+global UnloadSelfAndExit
+extern VirtualAlloc,GetProcAddress,GetModuleHandleA
+
+section .text
+
+;; extern "C" VOID __fastcall UnloadSelfAndExit(HMODULE hModule);
+struc UnloadSelfAndExitShadowSpace
+	.hModule	resq	1
+endstruc
+
+UnloadSelfAndExit:
+	mov [rsp+UnloadSelfAndExitShadowSpace.hModule], rcx
+	xor rcx, rcx
+	mov rdx, unload_self_size+unload_self_config_size
+	
+	xor r8,r8
+	or r8, MEM_COMMIT
+	or r8, MEM_RESERVE
+
+	xor r9,r9
+	or r9, PAGE_EXECUTE_READWRITE
+
+	sub rsp, 20h
+	call VirtualAlloc
+	add rsp, 20h
+
+	mov rdi, rax
+	lea rsi, [unload_self]
+	mov rcx, unload_self_size
+	rep movsb
+	mov rbx, rdi
+
+	lea rcx, [cKernel32]
+	lea rdx, [cFreeLibrary]
+
+	sub rsp, 20h
+	call helperGetProcAddress
+	add rsp, 20h
+
+	mov [rbx + unload_self_config.fpFreeLibrary],rax
+
+	lea rcx, [cKernel32]
+	lea rdx, [cExitThread]
+
+	sub rsp, 20h
+	call helperGetProcAddress
+	add rsp, 20h
+
+	mov [rbx + unload_self_config.fpExitThread],rax
+
+	mov rcx, [rsp+UnloadSelfAndExitShadowSpace.hModule]
+	mov [rbx + unload_self_config.hModule], rcx
+
+	lea rax, [rbx - unload_self_size]
+	jmp rax
+
+;; __fastcall helperGetProcAddress(char *moduleName, char *functionName)
+helperGetProcAddress:
+	;Stack alignment
+	sub rsp, 8h
+
+	mov [rsp], rdx
+	sub rsp,20h
+	call GetModuleHandleA
+	add rsp, 20h
+
+	mov rcx, rax
+	mov rdx, [rsp]
+	sub rsp, 20h
+	call GetProcAddress
+	add rsp, 20h
+
+	;Stack alignment
+	add rsp, 8h
+	ret
+
+cKernel32: db "Kernel32.dll",0
+cFreeLibrary: db "FreeLibrary",0
+cExitThread: db "ExitThread",0
+
+struc unload_self_config
+	.hModule			resq	1
+	.fpExitThread		resq	1
+	.fpFreeLibrary		resq	1
+endstruc
+
+unload_self:
+	jmp .a
+.b:
+	pop rbp
+	
+	;FreeLibrary(hModule)
+	mov rcx, [rbp+unload_self_config.hModule]
+	mov rax, [rbp+unload_self_config.fpFreeLibrary]
+
+	sub rsp, 28h
+	call rax
+	add rsp, 28h
+
+	;ExitThread(0)
+
+	xor rcx,rcx
+	mov rax, [rbp+unload_self_config.fpExitThread]
+	
+	sub rsp, 28h
+	call rax ; Never actually returns.
+	add rsp, 28h
+	
+	ret
+.a:
+	call .b
+
+unload_self_size: equ $-unload_self
+; We're pretending there is an unload_self_config struc here...

@@ -1,0 +1,109 @@
+/**
+	@file	doxy.dox
+	@brief	Some pages of doxygen comments to be included in the documentation.
+**/
+
+/**
+	@mainpage	The Injex Framework
+	
+	@section	intro_sec	Introduction
+	@details	Injex is comprised of two parts a DLL injector, and a DLL 
+				template that is to be edited and compiled. The template 
+				DLL comes with standard functionality to place hooks for 
+				function hooking in whatever it is injected into. You can
+				use the individual libraries in your own project as well.
+	
+	@section	parts_sec The Parts of Injex
+	@details	The Injex Framework is comprised of several parts.
+	
+	@subsection injex_exe	injex.exe: The injector.
+	@details	Injex is the name of the framework, but it is also the name of
+				the program used to inject DLLs into processes.
+				
+				You may use Injex.exe to inject a DLL into any application.
+				It is not strictly for use with DLLs built with the inject
+				library. However you must follow a standard so it can run
+				your code properly. You can see an example of how your DLL must
+				be initialized in injectable_dllmain_example.c. But, put simply,
+				it must run its code from a new thread created in DllMain of
+				a function of your choice.
+
+	@subsection	injexdll_dll injexdll.dll: The Injectable DLL Template
+	@details	The source provided with each release will contain a Visual
+				C solution named "injexdll". You can use this as a starting
+				point for creating your injectable DLL.
+
+	@subsection	hooklib_lib	hooklib: The Hooking and Alteration Library
+	@details	hooklib can be used by your injected DLL to hook and alter
+				the functionality of the target process. Injexdll includes
+				hooklib and usualy containts some code that utilizes its
+				functionality, depending on the release version of the
+				Injex Framework that you have.
+
+	@section	compatibility_sec Compatibility
+	@details	Compability tests are performed on each release of the
+				Injex Framework; it is ensured to work with the following
+				versions of Windows:
+				- Windows 2000 Professional (All Versions & SP3/SP4 after updates)
+				- Windows XP (All Versions & Service Packs)
+				- Windows Server 2003 (All Versions & Service Packs)
+				- Windows Vista (All Versions & Service Packs)
+				- Windows 7 (All Versions & Service Packs)
+				- Windows Server 2008 (All Versions & Service Packs)
+				- Windows 8 (Only Tested on Developer Preview)
+				
+				However Injex has NOT been tested on:
+				- Windows Advanced Server 2000 (It probably still works on SP3/4+)
+	
+**/
+
+
+/**
+	@page		injex_usage Injex.exe Usage Instructions
+	
+	@section	sect_purpose What is Injex?
+	@details	Injex in an integral part of the injex framework. It is a command 
+				line utility that uses the "Richter Method" for injecting DLLs into 
+				target processes.
+				
+	@section	sect_usage Usage
+	@details	You can get usage instructions from injex by running it with no arguments:
+@verbatim
+C:\> injex.exe
+Usage: injex -d <dllName> < -b <binary name> [-a <arguments>] | -p <Process ID> > [-w <milliseconds>]
+  -d: Specify the DLL to inject.
+  -b: Specify a binary to run then inject into.
+  -a: Used in conjunction with '-b' to provide command line arguments to the
+      program to inject into.
+  -p: Use instead of '-b' to inject into an application that is already
+      running.
+  -w: Use with '-b' when running an application to start it suspended and
+      allow <milliseconds> for the injected DLL to lay hooks before
+      resuming it.
+  -n: The name of the running process (ie. explorer.exe) to inject into. If
+      there are multiple copies of the named process running, this will inject
+      into the first process with the specified name that it finds.
+@endverbatim
+				
+				
+**/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
