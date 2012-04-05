@@ -17,6 +17,9 @@
     <ClInclude Include="hooklib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\injex\winstructs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hooklib.cpp">

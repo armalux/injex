@@ -155,6 +155,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\injex\winstructs.h" />
     <ClInclude Include="hooklib.h" />
   </ItemGroup>
   <ItemGroup>

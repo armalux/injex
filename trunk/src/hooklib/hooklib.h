@@ -1,15 +1,8 @@
+
 /**
  	@file	hooklib.h
-	
-	@brief	This contains the prototypes of the core hooking and editing
-			functionality of Injex.
-			
-	@author	Eric Johnson (megamandos@gmail.com)
-	
-	@todo	Complete implementation of VTable Hooking.
-	
-	@ingroup	HookLib
-	
+	@brief	This contains the prototypes of the core hooking and editing functionality of Injex.
+	@todo	Complete implementation of VTable Hooking. http://www.mpgh.net/forum/31-c-c-programming/417794-trouble-d3d9-hook-solved.html#post5682845
 **/
 
 
@@ -52,6 +45,12 @@
 	@brief		Hooking system-wide keyboard input
 	@defgroup	LowLevelKeyboardHooking Low Level Keyboard Hooking
 	@ingroup	KeyboardHooking
+**/
+
+/**
+	@brief		To help your DLL hide from Anti-Cheat applications.
+	@defgroup	AntiCheatAvoidance	Anti-Cheat Avoidance
+	@ingroup	HookLib
 **/
 
 #ifndef _HOOKING_H_
@@ -224,7 +223,7 @@ VOID EntryStub_free(PENTRY_STUB_TRAMP pStub);
 BOOL patchCode(PVOID pTargetAddress, PVOID pPatchBytes, ULONG cbPatchLen);
 
 /**
-	@brief	writeJump calculates the relative offset from a given function, pOriginalFunctionAddress, to a new function,
+	@brief	Calculates the relative offset from a given function, pOriginalFunctionAddress, to a new function,
 			pNewTargetAddress. A five byte relative jump will be written at pOriginalFunctionAddress redirecting execution
 			to pNewTargetAddress.
 
@@ -232,7 +231,6 @@ BOOL patchCode(PVOID pTargetAddress, PVOID pPatchBytes, ULONG cbPatchLen);
 	@param[in]	 pNewTargetAddress 
 
 	@retval	TRUE if the patch was written, FALSE otherwise.
-
 */
 BOOL writeJump(PVOID pOriginalFunctionAddress, PVOID pNewTargetAddress);
 
@@ -250,9 +248,9 @@ PVOID derefJump(PVOID pTargetAddress);
 	@brief	getPostAslrAddr calculated the new address of a function after windows has applied
 			address space layout randomization to the process.
 
-	@param[in]	 ImageBaseOffset The address of the function inside the PE (Like what you see in IDA).
+	@param[in]	ImageBaseOffset The address of the function inside the PE (Like what you see in IDA).
 
-	@return The new correct address (like what you would see in WinDbg/OllyDbg).
+	@return	The new correct address (like what you would see in WinDbg/OllyDbg).
 **/
 PVOID getPostAslrAddr(PVOID ImageBaseOffset);
 
@@ -383,4 +381,195 @@ BOOL UnhookKeyboard();
 **/
 extern "C" VOID __stdcall UnloadSelfAndExit(HMODULE hModule);
 
+/**
+	@brief	Used to scan for binary signatures.
+	
+	@param[in]	pData	A pointer to the point to check for the specified signature.
+	@param[in]	bMask	Pointer to a string of bytes to search for.
+	@param[in]	szMask	Pointer to a string of 'x's and '?'s. Use ? to ignore a specific
+						byte. This has to be the same length as bMask in bytes.
+	
+	@retval	TRUE	Match.
+	@retval	FALSE	No Match.
+**/
+inline BOOL bCompare(const BYTE* pData, const BYTE* bMask, const char* szMask);
+
+
+/**
+	@brief	Performs bCompare over a range of addresses.
+	
+	@param[in]	dwAddress	The starting address.
+	@param[in]	dwLen		The number of bytes to search.
+	@param[in]	bMask		See bCompare.
+	@param[in]	szMask		See bCompare.
+	
+	@return	A pointer to the match, if one is found, otherwise NULL.
+**/
+PVOID ScanPattern(PVOID dwAddress, DWORD_PTR dwLen, BYTE *bMask, char *szMask);
+
+/**
+	@brief	Used to find the Virtual Method Table in Direct 3D 9.
+	@author	Jason
+	
+	@return	A pointer to the D3D9 VMT.
+	
+	@ingroup VTableHooking
+**/
+DWORD *d3d9_GetVirtualTable();
+
+/**
+	@brief	The name of the D3D9 DLL
+	
+	@ingroup VTableHooking
+**/
+#define D3D9_MODULE "d3d9.dll"
+
+/**
+	@brief	Used to locate VTable Offsets for functions in D3D9.
+	@enum	D3D9_VTABLE_INDICES
+	
+	@ingroup VTableHooking
+**/
+typedef enum D3D9_VTABLE_INDICES { 
+			 I_D3D9_QUERYINTERFACE, 
+			 I_D3D9_ADDREF, 
+			 I_D3D9_RELEASE, 
+			 I_D3D9_TESTCOOPERATIVELEVEL, 
+			 I_D3D9_GETAVAILABLETEXTUREMEM, 
+			 I_D3D9_EVICTMANAGEDRESOURCES, 
+			 I_D3D9_GETDIRECT3D, 
+			 I_D3D9_GETDEVICECAPS, 
+			 I_D3D9_GETDISPLAYMODE, 
+			 I_D3D9_GETCREATIONPARAMETERS, 
+			 I_D3D9_SETCURSORPROPERTIES, 
+			 I_D3D9_SETCURSORPOSITION, 
+			 I_D3D9_SHOWCURSOR, 
+			 I_D3D9_CREATEADDITIONALSWAPCHAIN, 
+			 I_D3D9_GETSWAPCHAIN, 
+			 I_D3D9_GETNUMBEROFSWAPCHAINS, 
+			 I_D3D9_RESET, 
+			 I_D3D9_PRESENT, 
+			 I_D3D9_GETBACKBUFFER, 
+			 I_D3D9_GETRASTERSTATUS, 
+			 I_D3D9_SETDIALOGBOXMODE, 
+			 I_D3D9_SETGAMMARAMP, 
+			 I_D3D9_GETGAMMARAMP, 
+			 I_D3D9_CREATETEXTURE, 
+			 I_D3D9_CREATEVOLUMETEXTURE, 
+			 I_D3D9_CREATECUBETEXTURE, 
+			 I_D3D9_CREATEVERTEXBUFFER, 
+			 I_D3D9_CREATEINDEXBUFFER, 
+			 I_D3D9_CREATERENDERTARGET, 
+			 I_D3D9_CREATEDEPTHSTENCILSURFACE, 
+			 I_D3D9_UPDATESURFACE, 
+			 I_D3D9_UPDATETEXTURE, 
+			 I_D3D9_GETRENDERTARGETDATA, 
+			 I_D3D9_GETFRONTBUFFERDATA, 
+			 I_D3D9_STRETCHRECT, 
+			 I_D3D9_COLORFILL, 
+			 I_D3D9_CREATEOFFSCREENPLAINSURFACE, 
+			 I_D3D9_SETRENDERTARGET, 
+			 I_D3D9_GETRENDERTARGET, 
+			 I_D3D9_SETDEPTHSTENCILSURFACE, 
+			 I_D3D9_GETDEPTHSTENCILSURFACE, 
+			 I_D3D9_BEGINSCENE, 
+			 I_D3D9_ENDSCENE, 
+			 I_D3D9_CLEAR, 
+			 I_D3D9_SETTRANSFORM, 
+			 I_D3D9_GETTRANSFORM, 
+			 I_D3D9_MULTIPLYTRANSFORM, 
+			 I_D3D9_SETVIEWPORT, 
+			 I_D3D9_GETVIEWPORT, 
+			 I_D3D9_SETMATERIAL, 
+			 I_D3D9_GETMATERIAL, 
+			 I_D3D9_SETLIGHT, 
+			 I_D3D9_GETLIGHT, 
+			 I_D3D9_LIGHTENABLE, 
+			 I_D3D9_GETLIGHTENABLE, 
+			 I_D3D9_SETCLIPPLANE, 
+			 I_D3D9_GETCLIPPLANE, 
+			 I_D3D9_SETRENDERSTATE, 
+			 I_D3D9_GETRENDERSTATE, 
+			 I_D3D9_CREATESTATEBLOCK, 
+			 I_D3D9_BEGINSTATEBLOCK, 
+			 I_D3D9_ENDSTATEBLOCK, 
+			 I_D3D9_SETCLIPSTATUS, 
+			 I_D3D9_GETCLIPSTATUS, 
+			 I_D3D9_GETTEXTURE, 
+			 I_D3D9_SETTEXTURE, 
+			 I_D3D9_GETTEXTURESTAGESTATE, 
+			 I_D3D9_SETTEXTURESTAGESTATE, 
+			 I_D3D9_GETSAMPLERSTATE, 
+			 I_D3D9_SETSAMPLERSTATE, 
+			 I_D3D9_VALIDATEDEVICE, 
+			 I_D3D9_SETPALETTEENTRIES, 
+			 I_D3D9_GETPALETTEENTRIES, 
+			 I_D3D9_SETCURRENTTEXTUREPALETTE, 
+			 I_D3D9_GETCURRENTTEXTUREPALETTE, 
+			 I_D3D9_SETSCISSORRECT, 
+			 I_D3D9_GETSCISSORRECT, 
+			 I_D3D9_SETSOFTWAREVERTEXPROCESSING, 
+			 I_D3D9_GETSOFTWAREVERTEXPROCESSING, 
+			 I_D3D9_SETNPATCHMODE, 
+			 I_D3D9_GETNPATCHMODE, 
+			 I_D3D9_DRAWPRIMITIVE, 
+			 I_D3D9_DRAWINDEXEDPRIMITIVE, 
+			 I_D3D9_DRAWPRIMITIVEUP, 
+			 I_D3D9_DRAWINDEXEDPRIMITIVEUP, 
+			 I_D3D9_PROCESSVERTICES, 
+			 I_D3D9_CREATEVERTEXDECLARATION, 
+			 I_D3D9_SETVERTEXDECLARATION, 
+			 I_D3D9_GETVERTEXDECLARATION, 
+			 I_D3D9_SETFVF, 
+			 I_D3D9_GETFVF, 
+			 I_D3D9_CREATEVERTEXSHADER, 
+			 I_D3D9_SETVERTEXSHADER, 
+			 I_D3D9_GETVERTEXSHADER, 
+			 I_D3D9_SETVERTEXSHADERCONSTANTF, 
+			 I_D3D9_GETVERTEXSHADERCONSTANTF, 
+			 I_D3D9_SETVERTEXSHADERCONSTANTI, 
+			 I_D3D9_GETVERTEXSHADERCONSTANTI, 
+			 I_D3D9_SETVERTEXSHADERCONSTANTB, 
+			 I_D3D9_GETVERTEXSHADERCONSTANTB, 
+			 I_D3D9_SETSTREAMSOURCE, 
+			 I_D3D9_GETSTREAMSOURCE, 
+			 I_D3D9_SETSTREAMSOURCEFREQ, 
+			 I_D3D9_GETSTREAMSOURCEFREQ, 
+			 I_D3D9_SETINDICES, 
+			 I_D3D9_GETINDICES, 
+			 I_D3D9_CREATEPIXELSHADER, 
+			 I_D3D9_SETPIXELSHADER, 
+			 I_D3D9_GETPIXELSHADER, 
+			 I_D3D9_SETPIXELSHADERCONSTANTF, 
+			 I_D3D9_GETPIXELSHADERCONSTANTF, 
+			 I_D3D9_SETPIXELSHADERCONSTANTI, 
+			 I_D3D9_GETPIXELSHADERCONSTANTI, 
+			 I_D3D9_SETPIXELSHADERCONSTANTB, 
+			 I_D3D9_GETPIXELSHADERCONSTANTB, 
+			 I_D3D9_DRAWRECTPATCH, 
+			 I_D3D9_DRAWTRIPATCH, 
+			 I_D3D9_DELETEPATCH, 
+			 I_D3D9_CREATEQUERY };
+
+/**
+	@brief	Returns the address of the Process Environment Block.
+**/
+PVOID GetPebAddress();
+
+/**
+	@brief	Unlinks a DLL from the loaded modules list in the process this is called from.
+
+	@param[in]	hModule A handle to the module to unlink.
+
+	@sa	http://www.battleforums.com/forums/mods-maps-patches/104427-cloakdll-cpp.html
+
+	@ingroup AntiCheatAvoidance
+**/
+VOID UnlinkModuleByName(HINSTANCE hModule);
+
 #endif //_HOOKING_H_
+
+
+
+
+

