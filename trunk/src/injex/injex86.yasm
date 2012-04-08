@@ -46,7 +46,6 @@ struc loader_pic_config
 endstruc
 
 loader_pic:
-	; This, children, is how we push a qword without fucking up registers in x64.
 	push 0xDEADBEEF
 	pushad
 	pushfd
